@@ -1,4 +1,7 @@
 node_modules/
 reports/
 report.db
+*.db
+ai-version/reports/
+ai-version/report.db
 .env

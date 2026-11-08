@@ -1,7 +1,8 @@
 import { initDb } from './db.js';
 
-export function getReportData(dbInstance = null) {
+export function getReportData(dbInstance = null, days = 7) {
   const db = dbInstance || initDb();
+  const safeDays = Math.max(1, Math.min(Number(days) || 7, 365));
 
   // 1. Total number of orders and 2. Total revenue
   const summaryStmt = db.prepare(`
@@ -25,18 +26,18 @@ export function getReportData(dbInstance = null) {
   `);
   const topProducts = topProductsStmt.all();
 
-  // 4. Orders per day for the last 7 days
+  // 4. Orders per day for the last N days (default 7)
   const ordersPerDayStmt = db.prepare(`
     SELECT 
       date(created_at) AS date,
       COUNT(*) AS order_count,
       ROUND(SUM(amount), 2) AS revenue
     FROM orders
-    WHERE date(created_at) >= date('now', '-7 days')
+    WHERE date(created_at) >= date('now', '-' || ? || ' days')
     GROUP BY date(created_at)
     ORDER BY date ASC
   `);
-  const ordersPerDay = ordersPerDayStmt.all();
+  const ordersPerDay = ordersPerDayStmt.all(safeDays);
 
   // Also fetch all orders for the long table in the PDF report
   const allOrdersStmt = db.prepare(`

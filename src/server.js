@@ -70,6 +70,8 @@ app.get('/reports/:id/file', (req, res) => {
     return res.status(404).json({ error: 'Report file missing on disk' });
   }
 
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="sales-report-${id}.pdf"`);
   res.sendFile(absolutePath);
 });
 
@@ -77,6 +79,7 @@ app.get('/reports/:id/file', (req, res) => {
 app.post('/reports', async (req, res) => {
   try {
     const force = Boolean(req.body && req.body.force === true);
+    const days = parseInt(req.body?.days || req.query?.days, 10) || 7;
 
     // Stage 5 Idempotency check: if generated today and force is not set, return existing report
     if (!force) {
@@ -96,7 +99,7 @@ app.post('/reports', async (req, res) => {
       }
     }
 
-    const reportData = getReportData(db);
+    const reportData = getReportData(db, days);
 
     // Insert new report record to obtain ID
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
