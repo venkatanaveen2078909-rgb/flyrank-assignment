@@ -17,6 +17,12 @@ export function initDb(dbPath = DB_PATH) {
       amount REAL NOT NULL,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      path TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
   `);
   return db;
 }
