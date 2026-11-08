@@ -73,9 +73,29 @@ app.get('/reports/:id/file', (req, res) => {
   res.sendFile(absolutePath);
 });
 
-// POST /reports -> runs whole pipeline: query -> render -> store -> return 201
+// POST /reports -> generates report or returns existing if already generated today (idempotency)
 app.post('/reports', async (req, res) => {
   try {
+    const force = Boolean(req.body && req.body.force === true);
+
+    // Stage 5 Idempotency check: if generated today and force is not set, return existing report
+    if (!force) {
+      const existing = db.prepare(`
+        SELECT id, path, created_at 
+        FROM reports 
+        WHERE date(created_at) = date('now') 
+        ORDER BY id DESC 
+        LIMIT 1
+      `).get();
+
+      if (existing && fs.existsSync(path.resolve(existing.path))) {
+        return res.status(200).json({
+          id: existing.id,
+          file: `/reports/${existing.id}/file`
+        });
+      }
+    }
+
     const reportData = getReportData(db);
 
     // Insert new report record to obtain ID
